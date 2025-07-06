@@ -53,6 +53,7 @@ MainComponent::MainComponent() {
         }
 
         TimerGuide _{ *this };
+        uac_.OnUACDevoceDisconnect();
         if (current_device_ == eMyDevice::UAC) {
             ResetToBootloader();
             StartBootloaderFlash();
@@ -290,7 +291,15 @@ void MainComponent::ResetToBootloader() {
     constexpr auto timeout = std::chrono::seconds(10);
     while (current_device_ != eMyDevice::BOOT) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        timerCallback();
+
+        usb_device_handle_ = libusb_open_device_with_vid_pid(usb_context_, kVendorID, kBootProductID);
+        if (usb_device_handle_ != nullptr) {
+            DBG("[BOOT] connect to bootloader");
+            current_device_ = eMyDevice::BOOT;
+            OnUsbDeviceConnect(eMyDevice::BOOT);
+            return;
+        }
+
         auto now = std::chrono::system_clock::now();
         if (now - begin > timeout) {
             DBG("[BOOT] timeout to connect to bootloader");

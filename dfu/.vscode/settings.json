@@ -10,4 +10,5 @@
         "--clang-tidy",
     ],
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "idf.pythonInstallPath": "c:\\Users\\Kawai\\esp\\esp-idf-v5.3.1\\tools\\tools\\idf-python\\3.11.2\\python.exe",
 }

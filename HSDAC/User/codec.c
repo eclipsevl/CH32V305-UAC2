@@ -21,15 +21,15 @@
 #define DMA_FREQUENCY_MEAURE_PERIOD 10
 
 static StereoSample_T i2s_dma_buffer_[I2S_DMA_BUFFER_SIZE] = {0};
-static volatile int32_t last_i2s_dma_wpos_ = 0;
+static int32_t last_i2s_dma_wpos_ = 0;
 static bool transfer_error_ = false;
 static StereoSample_T uac_buffer_[UAC_BUFFER_LEN] = {0};
-static volatile uint32_t uac_buf_wpos_ = UAC_WPOS_INIT;
-static volatile uint32_t uac_buf_rpos = 0;
+static uint32_t uac_buf_wpos_ = UAC_WPOS_INIT;
+static uint32_t uac_buf_rpos = 0;
 
-static volatile uint32_t num_usb = 0;
-static volatile uint32_t num_dma = 0;
-static volatile uint32_t num_dma_cplt_tx = 0;
+static uint32_t num_usb = 0;
+static uint32_t num_dma = 0;
+static uint32_t num_dma_cplt_tx = 0;
 static uint32_t sample_rate_ = 48000;
 static uint32_t feedback_report_counter_ = 0;
 static uint32_t dma_frequency_meausure_counter_ = 0;
@@ -38,8 +38,8 @@ uint32_t mesured_dma_sample_rate_ = 0;
 uint32_t mesured_usb_sample_rate_ = 0;
 static uint32_t lantency_pos = UAC_BUFFER_LEN / 2;
 
-volatile uint32_t max_uac_len_ever = 0;
-volatile uint32_t min_uac_len_ever = 0xffffffff;
+uint32_t max_uac_len_ever = 0;
+uint32_t min_uac_len_ever = 0xffffffff;
 
 static void DMA_Tx_Init(DMA_Channel_TypeDef* DMA_CHx, u32 ppadr, u32 memadr, u16 bufsize) {
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);

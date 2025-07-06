@@ -21,8 +21,8 @@ static void ES9018K_Init(void) {
     Codec_PollWrite(1, 0b10000000);
 }
 
-extern volatile uint32_t max_uac_len_ever;
-extern volatile uint32_t min_uac_len_ever;
+extern uint32_t max_uac_len_ever;
+extern uint32_t min_uac_len_ever;
 extern uint32_t mesured_dma_sample_rate_;
 extern uint32_t mesured_usb_sample_rate_;
 extern float report_fs_;
@@ -72,7 +72,6 @@ int main(void) {
             if (e->type == 0) {
                 // dac param setting
                 Codec_PollWrite(e->reg, e->val);
-                Delay_Ms(10);
             }
             else if (e->type == 1 && e->reg == 0x12 && e->val == 0x34) {
                 // firmware update
