@@ -4,6 +4,7 @@
 #include "ch32v30x_spi.h"
 #include "ch32v30x_dma.h"
 #include "ch32v30x_i2c.h"
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
@@ -17,12 +18,11 @@
 #define UAC_BUFFER_LEN_MASK (UAC_BUFFER_LEN - 1)
 #define UAC_WPOS_INIT       (UAC_BUFFER_LEN / 2)
 
-#define FEEDBACK_REPORT_PERIOD 5
+#define FEEDBACK_REPORT_PERIOD 8
 #define DMA_FREQUENCY_MEAURE_PERIOD 10
 
 static StereoSample_T i2s_dma_buffer_[I2S_DMA_BUFFER_SIZE] = {0};
 static int32_t last_i2s_dma_wpos_ = 0;
-static bool transfer_error_ = false;
 static StereoSample_T uac_buffer_[UAC_BUFFER_LEN] = {0};
 static uint32_t uac_buf_wpos_ = UAC_WPOS_INIT;
 static uint32_t uac_buf_rpos = 0;
@@ -68,8 +68,7 @@ static void DMA_Tx_Init(DMA_Channel_TypeDef* DMA_CHx, u32 ppadr, u32 memadr, u16
     NVIC_Init(&dma_nvic);
 
     DMA_ClearITPendingBit(DMA1_IT_TC5);
-    DMA_ClearITPendingBit(DMA1_IT_TE5);
-    DMA_ITConfig(DMA1_Channel5, DMA_IT_TC | DMA_IT_TE, ENABLE);
+    DMA_ITConfig(DMA1_Channel5, DMA_IT_TC, ENABLE);
 }
 
 static void I2S2_Init(void) {
@@ -125,23 +124,12 @@ static void I2C2_Init(void) {
 
 void DMA1_Channel5_IRQHandler(void) WCH_FAST_INTERRUPT;
 void DMA1_Channel5_IRQHandler(void) {
-    if (DMA_GetFlagStatus(DMA1_FLAG_TE5) == SET) {
-        DMA_ClearFlag(DMA1_FLAG_TE5);
-        DMA_Cmd(DMA1_Channel5, DISABLE);
-        I2S_Cmd(SPI2, DISABLE);
-        transfer_error_ = true;
-    }
-    if (DMA_GetFlagStatus(DMA1_FLAG_TC5) == SET) {
-        DMA_ClearFlag(DMA1_FLAG_TC5);
-        NVIC_DisableIRQ(USBHS_IRQn);
-        ++num_dma_cplt_tx;
-        NVIC_EnableIRQ(USBHS_IRQn);
-    }
+    DMA_ClearFlag(DMA1_FLAG_TC5);
+    NVIC_DisableIRQ(USBHS_IRQn);
+    atomic_fetch_add(&num_dma_cplt_tx, 1);
+    NVIC_EnableIRQ(USBHS_IRQn);
 }
 
-// ========================================
-// public
-// ========================================
 static int32_t Swap16(int32_t x) {
     uint32_t r = x;
     uint32_t up = r & 0xffff;
@@ -175,10 +163,6 @@ void Codec_DeInit(void) {
     I2S_Cmd(SPI2, DISABLE);
     SPI_I2S_DeInit(SPI2);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, DISABLE);
-}
-
-bool Codec_IsTransferError(void) {
-    return transfer_error_;
 }
 
 void Codec_PollWrite(uint8_t reg, uint8_t val) {
@@ -217,9 +201,9 @@ uint8_t Codec_PollRead(uint8_t reg) {
 }
 
 void Codec_Start (void) {
-    uac_buf_wpos_ = UAC_WPOS_INIT;
+    uac_buf_wpos_ = 0;
     uac_buf_rpos = 0;
-    memset(uac_buffer_, 0, sizeof(uac_buffer_));
+    last_i2s_dma_wpos_ = (I2S_DMA_BUFFER_SIZE * 4 - DMA_GetCurrDataCounter(DMA1_Channel5)) / 4;
 }
 
 void Codec_Stop(void) {
@@ -304,16 +288,16 @@ void Codec_SetSampleRate(uint32_t sample_rate) {
     switch (sample_rate) {
     case 96000:
         I2S2_PrescaleConfig(6);
-        timeing = 1.0f; // 1sec
+        timeing = 2.0f;
         break;
     case 192000:
         I2S2_PrescaleConfig(3);
-        timeing = 2.0f; // 0.25sec
+        timeing = 4.0f;
         break;
     case 48000:
     default:
         I2S2_PrescaleConfig(12);
-        timeing = 0.5f; // 2sec
+        timeing = 1.0f;
         break;
     }
 }
@@ -323,30 +307,40 @@ void Codec_MeasureSampleRateAndReportFeedback(void) {
     if (uac_len < min_uac_len_ever) min_uac_len_ever = uac_len;
     if (uac_len > max_uac_len_ever) max_uac_len_ever = uac_len;
 
+    
+    if (uac_len < lantency_pos) {
+        report_fs_ = sample_rate_ + 100.0f * timeing;
+    }
+    else if (uac_len > lantency_pos) {
+        report_fs_ = sample_rate_ - 100.0f * timeing;
+    }
+    else {
+        report_fs_ = sample_rate_;
+    }
+    USBUAC_WriteFeedback(report_fs_);
+
     uint16_t frame = USBHSD->FRAME_NO & 0x7ff;
     if (frame - dma_frequency_meausure_counter_ >= DMA_FREQUENCY_MEAURE_PERIOD) {
         dma_frequency_meausure_counter_ = frame;
         uint32_t dma_bck = Codec_GetDMALen();
-        float fs = dma_bck * (1000 / (DMA_FREQUENCY_MEAURE_PERIOD)) / 4;
-        if (fs > (sample_rate_ + 2000)) fs = sample_rate_ + 2000;
-        else if (fs < (sample_rate_ - 2000)) fs = sample_rate_ - 2000;
-        raw_mesured_dma_sample_rate_ = raw_mesured_dma_sample_rate_ * 0.95f + fs * 0.05f;
-        mesured_dma_sample_rate_ = raw_mesured_dma_sample_rate_;
+        mesured_dma_sample_rate_ = dma_bck * (1000 / (DMA_FREQUENCY_MEAURE_PERIOD)) / 4;
+    //     // if (fs > (sample_rate_ + 2000)) fs = sample_rate_ + 2000;
+    //     // else if (fs < (sample_rate_ - 2000)) fs = sample_rate_ - 2000;
+        // raw_mesured_dma_sample_rate_ = raw_mesured_dma_sample_rate_ * 0.95f + fs * 0.05f;
+        // mesured_dma_sample_rate_ = raw_mesured_dma_sample_rate_;
         mesured_usb_sample_rate_ = num_usb * (1000 / (DMA_FREQUENCY_MEAURE_PERIOD));
         num_usb = 0;
     }
 
-    if (frame - feedback_report_counter_ >= FEEDBACK_REPORT_PERIOD) {
-        feedback_report_counter_ = frame;
-        int32_t uac_len = Codec_GetUACBufferLen();
-        int32_t diff = (uac_len - lantency_pos);
-        float fb = raw_mesured_dma_sample_rate_ - diff * timeing;
-        // limit to +-1khz
-        if (fb - sample_rate_ > 1000.0f) fb = sample_rate_ + 1000.0f;
-        else if (fb - sample_rate_ < -1000.0f) fb = sample_rate_ - 1000.0f;
-        report_fs_ = report_fs_ * 0.99f + fb * 0.01f;
-        USBUAC_WriteFeedback(report_fs_);
-    }
+    // if (frame - feedback_report_counter_ >= FEEDBACK_REPORT_PERIOD) {
+    //     feedback_report_counter_ = frame;
+    //     int32_t uac_len = Codec_GetUACBufferLen();
+    //     int32_t diff = (uac_len - lantency_pos);
+    //     float fb = raw_mesured_dma_sample_rate_ - diff * timeing;
+    //     // limit to +-1khz
+    //     report_fs_ = report_fs_ * 0.95f + fb * 0.05f;
+    //     USBUAC_WriteFeedback(report_fs_);
+    // }
 }
 
 static uint8_t volume_event_ = 0;

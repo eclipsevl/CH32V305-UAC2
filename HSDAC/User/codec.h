@@ -9,7 +9,6 @@ typedef struct _StereoSample {
 
 void            Codec_Init(void);
 void            Codec_DeInit(void);
-bool            Codec_IsTransferError(void);
 StereoSample_T* Codec_GetBlockToFill(void);
 uint32_t        Codec_GetBlockSize(void);
 void            Codec_BlockFilled(void);
