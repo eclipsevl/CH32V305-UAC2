@@ -21,3 +21,9 @@ void TIM2_IRQHandler(void);
 
 __attribute__((interrupt("WCH-Interrupt-fast"), used))
 void USBHS_IRQHandler(void);
+
+__attribute__((interrupt("WCH-Interrupt-fast"), used))
+void I2C2_EV_IRQHandler(void);
+
+__attribute__((interrupt("WCH-Interrupt-fast"), used))
+void I2C2_ER_IRQHandler(void);

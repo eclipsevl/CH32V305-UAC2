@@ -65,7 +65,7 @@ static uint8_t GetRegVolume(uint8_t channel) {
 // public
 // --------------------------------------------------------------------------------
 
-void Codec_Init() {
+bool Codec_Init() {
     CodecI2c_Init();
     CodecI2s_Init();
 
@@ -86,14 +86,13 @@ void Codec_Init() {
     GPIO_WriteBit(GPIOA, GPIO_Pin_1, Bit_SET);
     Delay_Ms(100);
 
-    // CodecI2c_PollWrite(0x90, 0, 0xf1, 1000);
-    Codec_PollWrite(0, 0xf1);
+    bool inited = true;
+    inited = inited && (kCodecI2cError_Finish == CodecI2c_PollWrite(0x90, 0, 0xf1, 1000));
     Delay_Ms(100);
-    // CodecI2c_PollWrite(0x90, 0, 0xf0, 1000);
-    Codec_PollWrite(0, 0xf0);
+    inited = inited && (kCodecI2cError_Finish == CodecI2c_PollWrite(0x90, 0, 0xf0, 1000));
     Delay_Ms(100);
-    Codec_PollWrite(1, 0b10000000);
-    // CodecI2c_PollWrite(0x90, 1, 0b10000000, 1000);
+    inited = inited && (kCodecI2cError_Finish == CodecI2c_PollWrite(0x90, 1, 0b10000000, 1000));
+    return inited;
 }
 
 void Codec_Start() {
@@ -223,26 +222,21 @@ uint32_t Codec_GetFeedbackFs() {
 }
 
 void Codec_Handler() {
-    if (!CodecI2c_IsBusy()) {
-        uint32_t mask = atomic_load(&es9018_reg_changes_);
-        if (mask & REG_CHANGE_VOLUME1) {
-            atomic_fetch_and(&es9018_reg_changes_, ~REG_CHANGE_VOLUME1);
-            // CodecI2c_Write(0x90, 15, GetRegVolume(0), 1000);
-            Codec_PollWrite(15, GetRegVolume(0));
-        }
-        else if (mask & REG_CHANGE_VOLUME2) {
-            atomic_fetch_and(&es9018_reg_changes_, ~REG_CHANGE_VOLUME2);
-            // CodecI2c_Write(0x90, 16, GetRegVolume(1), 1000);
-            Codec_PollWrite(16, GetRegVolume(0));
-        }
+    enum CodecI2cError status = CodecI2c_CheckStatus();
+    if (status == kCodecI2cError_Busy) return;
+
+    if (status == kCodecI2cError_Timeout) {
+        CodecI2c_SetStatusFinish();
+        printf("es9018k reg set timeout\n\r");
     }
-    else {
-        enum CodecI2cError result = CodecI2c_Tick();
-        if (result == kCodecI2cError_Timeout) {
-            printf("es9018k [%d]=%d set timeout\n\r", (int)CodecI2c_GetReg(), (int)CodecI2c_GetWriteValue());
-        }
-        else if (result == kCodecI2cError_Finish) {
-            printf("es9018k [%d]=%d set finish\n\r", (int)CodecI2c_GetReg(), (int)CodecI2c_GetWriteValue());
-        }
+
+    uint32_t mask = atomic_load(&es9018_reg_changes_);
+    if (mask & REG_CHANGE_VOLUME1) {
+        atomic_fetch_and(&es9018_reg_changes_, ~REG_CHANGE_VOLUME1);
+        CodecI2c_WriteInterrupt(0x90, 15, GetRegVolume(0), 1000);
+    }
+    else if (mask & REG_CHANGE_VOLUME2) {
+        atomic_fetch_and(&es9018_reg_changes_, ~REG_CHANGE_VOLUME2);
+        CodecI2c_WriteInterrupt(0x90, 16, GetRegVolume(1), 1000);
     }
 }

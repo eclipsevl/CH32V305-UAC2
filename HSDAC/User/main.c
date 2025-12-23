@@ -12,7 +12,7 @@ int main(void) {
     Delay_Init();
     Tick_Init();
     Usbd_Init();
-    Codec_Init();
+    bool inited = Codec_Init();
 
     Usbd_Connect();
     uint32_t tick = Tick_GetTick();
@@ -21,6 +21,9 @@ int main(void) {
 
         uint32_t now = Tick_GetTick();
         if (now - tick > 1000) {
+            if (!inited) {
+                printf("codec inited failed\n\r");
+            }
             printf("fb:%lu, have:%lu\n\r", Codec_GetFeedbackFs(), GetDmaSamplesHave());
             tick = now;
         }

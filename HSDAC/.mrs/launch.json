@@ -49,7 +49,7 @@
 					"runResetType": "halt",
 					"additionalCommands": [],
 					"setBreakAt": "",
-					"continue": true,
+					"continue": false,
 					"setProgramCounterAt": 0
 				},
 				"debugInRAM": false

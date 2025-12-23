@@ -685,7 +685,7 @@
 				"runResetType": "halt",
 				"additionalCommands": [],
 				"setBreakAt": "main",
-				"continue": true,
+				"continue": false,
 				"setBreak": false,
 				"setProgramCounter": false,
 				"setProgramCounterAddress": ""

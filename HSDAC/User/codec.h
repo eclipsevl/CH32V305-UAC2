@@ -1,8 +1,9 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
-void Codec_Init();
+bool Codec_Init();
 void Codec_Handler();
 
 void Codec_Start();
