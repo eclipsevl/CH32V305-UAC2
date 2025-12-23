@@ -1,11 +1,11 @@
 #include "tick.h"
 #include "ch32v30x_tim.h"
 #include "ch32v30x_rcc.h"
-// #include "system_ch32v30x.h"
+#include "ch32v30x_misc.h"
 
 static volatile uint32_t tick_ = 0;
 
-void TIM2_IRQHandler(void) WCH_FAST_INTERRUPT;
+__attribute__((interrupt("WCH-Interrupt-fast"), used))
 void TIM2_IRQHandler(void) {
     TIM_ClearFlag(TIM2, TIM_FLAG_Update);
     ++tick_;

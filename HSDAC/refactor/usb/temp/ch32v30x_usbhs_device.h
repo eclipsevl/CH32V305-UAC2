@@ -1,22 +1,9 @@
-/********************************** (C) COPYRIGHT *******************************
- * File Name          : ch32v30x_usbhs_device.h
- * Author             : WCH
- * Version            : V1.0.0
- * Date               : 2023/11/20
- * Description        : USB2.0 High speed device operation related header files
- * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
- * Attention: This software (modified or not) and binary are used for
- * microcontroller manufactured by Nanjing Qinheng Microelectronics.
- *******************************************************************************/
 #ifndef __CH32V30X_USBHS_DEVICE_H__
 #define __CH32V30X_USBHS_DEVICE_H__
 
-/*******************************************************************************/
-/* Header File */
-#include "debug.h"
-#include "string.h"
-#include "ch32v30x_usb.h"
-#include "usb_desc.h"
+#include <stdint.h>
+#include "ch32v30x.h"
+#include "core_riscv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -112,7 +99,6 @@ extern void USBHS_Device_SetAddress (uint32_t address);
 extern void USBHS_IRQHandler (void);
 extern void USBHS_Sleep_WakeUp_Cfg (void);
 extern void MCU_Sleep_Wakeup_Operate (void);
-extern uint8_t USBHS_Endp_DataUp (uint8_t endp, uint8_t *pbuf, uint16_t len, uint8_t mod);
 
 extern uint32_t USBCDC_Write(const char* buf, uint32_t len);
 extern void USBUAC_WriteFeedback(float local_fs);

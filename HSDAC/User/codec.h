@@ -1,34 +1,20 @@
 #pragma once
-#include <stdbool.h>
+
 #include <stdint.h>
 
-typedef struct _StereoSample {
-    int32_t left;
-    int32_t right;
-} StereoSample_T;
+void Codec_Init();
+void Codec_Handler();
 
-void            Codec_Init(void);
-void            Codec_DeInit(void);
-StereoSample_T* Codec_GetBlockToFill(void);
-uint32_t        Codec_GetBlockSize(void);
-void            Codec_BlockFilled(void);
-void            Codec_PollWrite(uint8_t reg, uint8_t val);
-uint8_t         Codec_PollRead(uint8_t reg);
+void Codec_Start();
+void Codec_Stop();
 
-void     Codec_Start(void);
-void     Codec_Stop(void);
-void     Codec_WriteUACBuffer(const uint8_t* ptr, uint32_t len);
-uint32_t Codec_GetUACBufferLen(void);
-
-uint32_t Codec_GetDMALen(void);
+uint32_t Codec_GetSampleRate();
 void     Codec_SetSampleRate(uint32_t sample_rate);
-void     Codec_MeasureSampleRateAndReportFeedback(void);
 
-enum eCodecChannel {
-    eCodecChannel_Left,
-    eCodecChannel_Right,
-};
+void    Codec_Mute(uint8_t channel, uint8_t mute);
+uint8_t Codec_IsMute(uint8_t channel);
+void    Codec_SetVolume(uint8_t channel, int16_t volume);
+int16_t Codec_GetVolume(uint8_t channel);
 
-void Codec_CheckVolumeEvent(void);
-void Codec_SetVolume(enum eCodecChannel channel, uint8_t vol);
-void Codec_SetLatencyPos(uint32_t pos);
+void     Codec_WriteBuffer(uint8_t const* buffer, uint32_t bytes);
+uint32_t Codec_GetFeedbackFs();

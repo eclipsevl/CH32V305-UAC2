@@ -11,6 +11,7 @@
 * microcontroller manufactured by Nanjing Qinheng Microelectronics.
 *******************************************************************************/
 #include "ch32v30x.h" 
+#include "ch32v30x_rcc.h"
 
 /* 
 * Uncomment the line corresponding to the desired System clock (SYSCLK) frequency (after 

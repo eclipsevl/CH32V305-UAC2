@@ -1,17 +1,4 @@
-/********************************** (C) COPYRIGHT  *******************************
-* File Name          : debug.c
-* Author             : WCH
-* Version            : V1.0.0
-* Date               : 2021/06/06
-* Description        : This file contains all the functions prototypes for UART
-*                      Printf , Delay functions.
-*********************************************************************************
-* Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
-* Attention: This software (modified or not) and binary are used for 
-* microcontroller manufactured by Nanjing Qinheng Microelectronics.
-*******************************************************************************/
 #include "debug.h"
-#include "usb/ch32v30x_usbhs_device.h"
 
 static uint8_t  p_us = 0;
 static uint16_t p_ms = 0;
@@ -93,8 +80,8 @@ void Delay_Ms(uint32_t n)
  */
 void USART_Printf_Init(uint32_t baudrate)
 {
-    GPIO_InitTypeDef  GPIO_InitStructure;
-    USART_InitTypeDef USART_InitStructure;
+    // GPIO_InitTypeDef  GPIO_InitStructure;
+    // USART_InitTypeDef USART_InitStructure;
 
 #if(DEBUG == DEBUG_UART1)
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 | RCC_APB2Periph_GPIOA, ENABLE);
@@ -124,12 +111,12 @@ void USART_Printf_Init(uint32_t baudrate)
 
 #endif
 
-    USART_InitStructure.USART_BaudRate = baudrate;
-    USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-    USART_InitStructure.USART_StopBits = USART_StopBits_1;
-    USART_InitStructure.USART_Parity = USART_Parity_No;
-    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-    USART_InitStructure.USART_Mode = USART_Mode_Tx;
+    // USART_InitStructure.USART_BaudRate = baudrate;
+    // USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+    // USART_InitStructure.USART_StopBits = USART_StopBits_1;
+    // USART_InitStructure.USART_Parity = USART_Parity_No;
+    // USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    // USART_InitStructure.USART_Mode = USART_Mode_Tx;
 
 #if(DEBUG == DEBUG_UART1)
     USART_Init(USART1, &USART_InitStructure);
@@ -162,6 +149,7 @@ void SDI_Printf_Enable(void)
     Delay_Ms(1);
 }
 
+#include "usb/usb_impl.h"
 /*********************************************************************
  * @fn      _write
  *
@@ -228,7 +216,11 @@ __attribute__((used)) int _write(int fd, char *buf, int size)
     }
     return size;
 #else
-    return USBCDC_Write(buf, size);
+    // return USBCDC_Write(buf, size);
+    if (UsbCdc_CanWrite()) {
+        UsbCdc_Write((uint8_t const*)buf, size);
+    }
+    return size;
 #endif
 }
 
@@ -251,6 +243,3 @@ __attribute__((used)) void *_sbrk(ptrdiff_t incr)
     curbrk += incr;
     return curbrk - incr;
 }
-
-
-

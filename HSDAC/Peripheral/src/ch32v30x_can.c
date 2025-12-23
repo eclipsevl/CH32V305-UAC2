@@ -10,6 +10,7 @@
 * microcontroller manufactured by Nanjing Qinheng Microelectronics.
 *******************************************************************************/
 #include "ch32v30x_can.h"
+#include "ch32v30x_dbgmcu.h"
 #include "ch32v30x_rcc.h"
 
 /* CAN CTLR Register bits */

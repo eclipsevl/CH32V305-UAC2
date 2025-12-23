@@ -1,18 +1,15 @@
-/********************************** (C) COPYRIGHT *******************************
- * File Name          : ch32v30x_usbhs_device.c
- * Author             : WCH
- * Version            : V1.0.0
- * Date               : 2023/11/20
- * Description        : This file provides all the USBHS firmware functions.
- *********************************************************************************
- * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
- * Attention: This software (modified or not) and binary are used for
- * microcontroller manufactured by Nanjing Qinheng Microelectronics.
- *******************************************************************************/
 #include "ch32v30x_usbhs_device.h"
+
+#include "ch32v30x_usb.h"
+#include "ch32v30x_rcc.h"
+#include "ch32v30x_misc.h"
+
 #include "codec.h"
 #include "tick.h"
 #include "hid_queue.h"
+#include "debug.h"
+#include "string.h"
+#include "usb_desc.h"
 
 /******************************************************************************/
 /* Variable Definition */
@@ -204,83 +201,6 @@ void USBHS_Device_Init (FunctionalState sta) {
         USBHSD->CONTROL &= ~USBHS_UC_RESET_SIE;
         NVIC_DisableIRQ (USBHS_IRQn);
     }
-}
-
-/*********************************************************************
- * @fn      USBHS_Endp_DataUp
- *
- * @brief   usbhs device data upload
- *          input: endp  - end-point numbers
- *                 *pubf - data buffer
- *                 len   - load data length
- *                 mod   - 0: DEF_UEP_DMA_LOAD 1: DEF_UEP_CPY_LOAD
- *
- * @return  none
- */
-uint8_t USBHS_Endp_DataUp (uint8_t endp, uint8_t *pbuf, uint16_t len, uint8_t mod) {
-    uint8_t endp_buf_mode, endp_en, endp_tx_ctrl;
-
-    /* DMA config, endp_ctrl config, endp_len config */
-    if ((endp >= DEF_UEP1) && (endp <= DEF_UEP15)) {
-        endp_en = USBHSD->ENDP_CONFIG;
-        if (endp_en & USBHSD_UEP_TX_EN (endp)) {
-            if ((USBHS_Endp_Busy[endp] & DEF_UEP_BUSY) == 0x00) {
-                endp_buf_mode = USBHSD->BUF_MODE;
-                /* if end-point buffer mode is double buffer */
-                if (endp_buf_mode & USBHSD_UEP_DOUBLE_BUF (endp)) {
-                    /* end-point buffer mode is double buffer */
-                    /* only end-point tx enable  */
-                    if ((endp_en & USBHSD_UEP_RX_EN (endp)) == 0x00) {
-                        endp_tx_ctrl = USBHSD_UEP_TXCTRL (endp);
-                        if (mod == DEF_UEP_DMA_LOAD) {
-                            if ((endp_tx_ctrl & USBHS_UEP_T_TOG_DATA1) == 0) {
-                                /* use UEPn_TX_DMA */
-                                USBHSD_UEP_TXDMA (endp) = (uint32_t)pbuf;
-                            } else {
-                                /* use UEPn_RX_DMA */
-                                USBHSD_UEP_RXDMA (endp) = (uint32_t)pbuf;
-                            }
-                        } else if (mod == DEF_UEP_CPY_LOAD) {
-                            if ((endp_tx_ctrl & USBHS_UEP_T_TOG_DATA1) == 0) {
-                                /* use UEPn_TX_DMA */
-                                memcpy (USBHSD_UEP_TXBUF (endp), pbuf, len);
-                            } else {
-                                /* use UEPn_RX_DMA */
-                                memcpy (USBHSD_UEP_RXBUF (endp), pbuf, len);
-                            }
-                        } else {
-                            return 1;
-                        }
-                    } else {
-                        return 1;
-                    }
-                } else {
-                    /* end-point buffer mode is single buffer */
-                    if (mod == DEF_UEP_DMA_LOAD) {
-
-                        USBHSD_UEP_TXDMA (endp) = (uint32_t)pbuf;
-                    } else if (mod == DEF_UEP_CPY_LOAD) {
-                        memcpy (USBHSD_UEP_TXBUF (endp), pbuf, len);
-                    } else {
-                        return 1;
-                    }
-                }
-                /* Set end-point busy */
-                USBHS_Endp_Busy[endp] |= DEF_UEP_BUSY;
-                /* end-point n response tx ack */
-                USBHSD_UEP_TLEN (endp) = len;
-                USBHSD_UEP_TXCTRL (endp) = (USBHSD_UEP_TXCTRL (endp) &= ~USBHS_UEP_T_RES_MASK) | USBHS_UEP_T_RES_ACK;
-            } else {
-                return 1;
-            }
-        } else {
-            return 1;
-        }
-    } else {
-        return 1;
-    }
-
-    return 0;
 }
 
 #define errflag _errflag

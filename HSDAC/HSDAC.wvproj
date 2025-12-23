@@ -7,10 +7,13 @@
 			"toolchain": "RISC-V",
 			"series": "CH32V305",
 			"rtos": "NoneOS",
-			"mcu": "CH32V305FBP6",
+			"mcu": "CH32V305FBP",
 			"description": "Website: http://www.wch.cn/products/CH32V307.html?\\nROM(byte): 128K, SRAM(byte): 32K, CHIP PINS: 20, GPIO PORTS: 17.\\nWCH CH32V3 series of mainstream MCUs covers the needs of a large variety of applications in the industrial,medical and consumer markets. High performance with first-class peripherals and low-power,low-voltage operation is paired with a high level of integration at accessible prices with a simple architecture and easy-to-use tools.",
+			"artifactType": "executable",
 			"link": "WCH-Link",
-			"peripheral_version": "2.8"
+			"peripheral_version": "2.8",
+			"calibrateSupport": false,
+			"calibrateCommand": ""
 		},
 		"linkedFolders": [],
 		"removedResources": [
@@ -18,11 +21,6 @@
 				"parentLogicPath": "",
 				"type": "file",
 				"name": "*.wvproj"
-			},
-			{
-				"parentLogicPath": "User",
-				"type": "file",
-				"name": "LED.c"
 			}
 		],
 		"projectName": "HSDAC",
@@ -39,32 +37,23 @@
 					"artifact_type": "Executable"
 				},
 				"parallelizationNumber": "optimal",
-				"stop_on_first_build_error": true,
+				"stop_on_first_build_error": false,
 				"pre_script": "",
 				"pre_script_description": "",
 				"post_script": "",
 				"post_script_description": "",
 				"excludeResources": [
-					"${project}/Startup/startup_ch32v30x_D8.S"
+					"${project}/Startup/startup_ch32v30x_D8.S",
+					"${project}/User/usb/temp/ch32_hardware.cpp",
+					"${project}/User/usb/temp/ch32v30x_usbhs_device.c",
+					"${project}/User/usb/temp/usb_desc.c",
+					"${project}/User/usb/temp/usb_desc_pp.cpp",
+					"${project}/User/board/codec_i2c.c",
+					"${project}/User/board/codec_i2s.c",
+					"${project}/User/board/hid_queue.c",
+					"${project}/refactor",
+					"${project}/env/startup_ch32v30x_D8.S"
 				],
-				"riscvTargetProcessor": {
-					"architecture": "rv32i",
-					"multiply_extension": true,
-					"atomic_extension": true,
-					"floating_point": "single",
-					"compressed_extension": true,
-					"extra_compressed_extension": true,
-					"bit_extension": false,
-					"multiplication_subset_of_the_M_extension": false,
-					"integer_ABI": "ilp32",
-					"floating_point_ABI": "single",
-					"tuning": "default",
-					"code_model": "default",
-					"small_data_limit": 8,
-					"align": "default",
-					"save_restore": true,
-					"other_target_flags": ""
-				},
 				"optimization": {
 					"level": "more",
 					"message_length": false,
@@ -122,7 +111,7 @@
 					},
 					"includes": {
 						"include_paths": [
-							"${project}/Startup"
+							"${project}/env"
 						],
 						"include_system_paths": [],
 						"include_files": []
@@ -145,10 +134,10 @@
 					},
 					"includes": {
 						"include_paths": [
-							"${project}/Debug",
-							"${project}/Core",
+							"${project}/env",
 							"${project}/User",
-							"${project}/Peripheral/inc"
+							"${project}/Peripheral/inc",
+							"${project}/User/board"
 						],
 						"include_system_paths": [],
 						"include_files": []
@@ -179,7 +168,12 @@
 						"undefined_symbols": []
 					},
 					"includes": {
-						"include_paths": [],
+						"include_paths": [
+							"${project}/env",
+							"${project}/Peripheral/inc",
+							"${project}/User",
+							"${project}/User/board"
+						],
 						"include_system_paths": [],
 						"include_files": []
 					},
@@ -212,7 +206,7 @@
 				"clinker": {
 					"general": {
 						"scriptFiles": [
-							"${project}/Ld/Link.ld"
+							"${project}/env/Link.ld"
 						],
 						"do_not_use_standard_start_files": true,
 						"do_not_use_default_libraries": false,
@@ -248,7 +242,7 @@
 				"cpplinker": {
 					"general": {
 						"scriptFiles": [
-							"${project}/Ld/Link.ld"
+							"${project}/env/Link.ld"
 						],
 						"do_not_use_standard_start_files": true,
 						"do_not_use_default_libraries": false,
@@ -313,9 +307,27 @@
 					"show_totals": false,
 					"other_flags": ""
 				},
+				"configVariables": [],
+				"riscvTargetProcessor": {
+					"architecture": "rv32i",
+					"multiply_extension": true,
+					"atomic_extension": true,
+					"floating_point": "single",
+					"compressed_extension": true,
+					"extra_compressed_extension": true,
+					"bit_extension": false,
+					"multiplication_subset_of_the_M_extension": false,
+					"integer_ABI": "ilp32",
+					"floating_point_ABI": "single",
+					"tuning": "default",
+					"code_model": "default",
+					"small_data_limit": 8,
+					"align": "default",
+					"save_restore": true,
+					"other_target_flags": ""
+				},
 				"component_toolchain": "${WCH:Toolchain:GCC8}",
-				"name": "obj",
-				"configVariables": []
+				"name": "obj"
 			},
 			{
 				"buildArtifact": {
@@ -333,24 +345,6 @@
 				"excludeResources": [
 					"${project}/Startup/startup_ch32v30x_D8.S"
 				],
-				"riscvTargetProcessor": {
-					"architecture": "rv32i",
-					"multiply_extension": true,
-					"atomic_extension": true,
-					"floating_point": "none",
-					"compressed_extension": true,
-					"extra_compressed_extension": true,
-					"bit_extension": false,
-					"multiplication_subset_of_the_M_extension": false,
-					"integer_ABI": "ilp32",
-					"floating_point_ABI": "none",
-					"tuning": "default",
-					"code_model": "default",
-					"small_data_limit": 8,
-					"align": "default",
-					"save_restore": true,
-					"other_target_flags": ""
-				},
 				"optimization": {
 					"level": "size",
 					"message_length": true,
@@ -599,9 +593,27 @@
 					"show_totals": false,
 					"other_flags": ""
 				},
+				"configVariables": [],
+				"riscvTargetProcessor": {
+					"architecture": "rv32i",
+					"multiply_extension": true,
+					"atomic_extension": true,
+					"floating_point": "none",
+					"compressed_extension": true,
+					"extra_compressed_extension": true,
+					"bit_extension": false,
+					"multiplication_subset_of_the_M_extension": false,
+					"integer_ABI": "ilp32",
+					"floating_point_ABI": "none",
+					"tuning": "default",
+					"code_model": "default",
+					"small_data_limit": 8,
+					"align": "default",
+					"save_restore": true,
+					"other_target_flags": ""
+				},
 				"component_toolchain": "${WCH:Toolchain:GCC8}",
-				"name": "dbg",
-				"configVariables": []
+				"name": "dbg"
 			}
 		]
 	},
@@ -669,11 +681,11 @@
 				"executableFileOffset": ""
 			},
 			"runCommands": {
-				"runReset": true,
+				"runReset": false,
 				"runResetType": "halt",
 				"additionalCommands": [],
 				"setBreakAt": "main",
-				"continue": false,
+				"continue": true,
 				"setBreak": false,
 				"setProgramCounter": false,
 				"setProgramCounterAddress": ""

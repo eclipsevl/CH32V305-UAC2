@@ -27,7 +27,7 @@
 
 /* DEBUG UATR Definition */
 #ifndef DEBUG
-#define DEBUG   DEBUG_UART3
+// #define DEBUG   DEBUG_UART3
 #endif
 
 /* SDI Printf Definition */
@@ -50,6 +50,3 @@ void SDI_Printf_Enable(void);
 #endif
 
 #endif 
-
-
-

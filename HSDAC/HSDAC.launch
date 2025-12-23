@@ -11,8 +11,8 @@
   <booleanAttribute key="org.eclipse.cdt.debug.gdbjtag.core.loadImage" value="true"/>
   <booleanAttribute key="org.eclipse.cdt.debug.gdbjtag.core.useProjBinaryForImage" value="true"/>
   <booleanAttribute key="org.eclipse.cdt.debug.gdbjtag.core.useFileForImage" value="false"/>
-  <booleanAttribute key="com.mounriver.debug.gdbjtag.openocd.doContinue" value="false"/>
-  <booleanAttribute key="com.mounriver.debug.gdbjtag.openocd.doSecondReset" value="true"/>
+  <booleanAttribute key="com.mounriver.debug.gdbjtag.openocd.doContinue" value="true"/>
+  <booleanAttribute key="com.mounriver.debug.gdbjtag.openocd.doSecondReset" value="false"/>
   <booleanAttribute key="org.eclipse.cdt.debug.gdbjtag.core.setStopAt" value="false"/>
   <booleanAttribute key="org.eclipse.cdt.debug.gdbjtag.core.setPcRegister" value="false"/>
   <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="true"/>

@@ -1,7 +1,8 @@
+#include <stdatomic.h>
+#include <stddef.h>
 #include "hid_queue.h"
 #include "ch32v30x.h"
 #include "ch32v30x_usb.h"
-#include <stdatomic.h>
 
 struct HID_Queue g_hid_queue = {
     .wpos_ = 0,
