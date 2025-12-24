@@ -2,11 +2,18 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "usb_desc.h"
 #include "usb_hardware.h"
 #include "hid_queue.h"
 #include "codec.h"
+#include "tick.h"
+#include "config.h"
+
+// ----------------------------------------
+// define
+// ----------------------------------------
 
 // --------------------------------------------------------------------------------
 // variable
@@ -31,6 +38,9 @@ static bool cdc_can_send;
 __attribute__((aligned(4)))
 static uint8_t uac2_rx_buffer[UAC2_STREAM_DATA_OUT_EP_MPSIZE];
 static uint32_t uac2_feedback_val;
+static uint64_t uac2_slience_flag_;
+static uint8_t uac2_writted_flag_;
+static uint32_t uac2_slience_tick_;
 
 static uint8_t hid_idle;
 
@@ -67,6 +77,8 @@ void UsbImpl_InitAndOpenEndpoints() {
     USBHSD->UEP1_MAX_LEN = UAC2_STREAM_DATA_OUT_EP_MPSIZE;
     USBHSD->UEP1_RX_DMA = (uint32_t)uac2_rx_buffer;
     USBHSD->UEP1_RX_CTRL = USBHS_UEP_R_RES_ACK;
+    uac2_writted_flag_ = 0;
+    uac2_slience_flag_ = 0;
 
     USBHSD->UEP2_TX_DMA = 0;
     USBHSD->UEP2_TX_CTRL = USBHS_UEP_T_RES_NAK;
@@ -115,7 +127,29 @@ void UsbImpl_HandleVendorRequest(struct UsbDevice* device, bool* allow, bool set
 }
 
 void UsbImpl_HandleSof() {
-    // do nothing
+    if (interface_alters[UAC2_STREAM_INTERFACE] == 0) return;
+
+    uac2_slience_flag_ <<= 1;
+    // test did last frame host wrote something from uac stream interface
+    if (uac2_writted_flag_ == 1) {
+        // he didn't
+        uac2_slience_flag_ |= 1;
+    }
+    uac2_writted_flag_ = 1;
+
+    // if there are at least some blanks in window, set it to stop
+    uint32_t slience_count = __builtin_popcountll(uac2_slience_flag_);
+    if (slience_count >= UAC2_SLIENCE_DETECT_FRAMES) {
+        if (Codec_IsRunning()) {
+            Codec_Stop();
+            printf("slience detect: %ld\n\r", slience_count);
+        }
+        uac2_slience_tick_ = Tick_GetTick();
+    }
+    if ((!Codec_IsRunning()) && (slience_count == 0) && (Tick_GetTick() - uac2_slience_tick_ > UAC2_SLIENCE_HOLD_TIME)) {
+        Codec_Start();
+        printf("unslience now\n\r");
+    }
 }
 
 void UsbImpl_SetInterfaceAlter(uint8_t interface, uint8_t alter, bool* allow) {
@@ -130,6 +164,8 @@ void UsbImpl_SetInterfaceAlter(uint8_t interface, uint8_t alter, bool* allow) {
                 }
                 else {
                     Codec_Start();
+                    uac2_writted_flag_ = 0;
+                    uac2_slience_flag_ = 0;
                 }
                 break;
         }
@@ -235,6 +271,7 @@ _cdc_ep_send:
 void UsbImpl_EpOutComplete(uint8_t ep_num, uint16_t count) {
     switch (ep_num) {
         case UAC2_STREAM_DATA_OUT_EP_ADDRESS & 0xf:
+            uac2_writted_flag_ = 0;
             Codec_WriteBuffer(uac2_rx_buffer, count);
             uac2_feedback_val = ConvertSamplerate2FeedbackRate(Codec_GetFeedbackFs());
             break;

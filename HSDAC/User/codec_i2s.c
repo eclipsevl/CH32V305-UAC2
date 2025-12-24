@@ -7,12 +7,12 @@
 #include "ch32v30x_spi.h"
 #include "ch32v30x_dma.h"
 #include "ch32v30x_misc.h"
+#include "config.h"
 
 // --------------------------------------------------------------------------------
 // marco
 // --------------------------------------------------------------------------------
 
-#define I2S_DMA_BUFFER_SIZE 256
 #define I2S_DMA_BUFFER_SIZE_MASK (I2S_DMA_BUFFER_SIZE - 1)
 
 // --------------------------------------------------------------------------------
@@ -108,6 +108,13 @@ uint32_t GetDmaSamplesHave() {
     return I2S_DMA_BUFFER_SIZE - GetDmaCanWrite();
 }
 
+static void I2S2_PrescaleConfig(uint32_t v) {
+    uint16_t odd = (v & 1) << 8;
+    uint16_t div = v >> 1;
+    uint16_t mlck = 1 << 9;
+    SPI2->I2SPR = odd | div | mlck;
+}
+
 // --------------------------------------------------------------------------------
 // public
 // --------------------------------------------------------------------------------
@@ -164,13 +171,6 @@ void CodecI2s_WriteUACBuffer(const uint8_t* ptr, uint32_t len) {
 
     last_i2s_dma_wpos_ += can_write;
     last_i2s_dma_wpos_ &= I2S_DMA_BUFFER_SIZE_MASK;
-}
-
-static void I2S2_PrescaleConfig(uint32_t v) {
-    uint16_t odd = (v & 1) << 8;
-    uint16_t div = v >> 1;
-    uint16_t mlck = 1 << 9;
-    SPI2->I2SPR = odd | div | mlck;
 }
 
 void CodecI2s_SetSampleRate(uint32_t sample_rate) {

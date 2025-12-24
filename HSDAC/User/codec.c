@@ -29,6 +29,7 @@ static uint32_t diff_sample_rate_;
 static uint32_t es9018_reg_changes_;
 static int16_t usb_volume_[2];
 static uint8_t usb_mute_;
+static bool is_runnning = false;
 
 // --------------------------------------------------------------------------------
 // implement
@@ -96,11 +97,21 @@ bool Codec_Init() {
 }
 
 void Codec_Start() {
-    CodecI2s_Start();
+    if (!is_runnning) {
+        CodecI2s_Start();
+        is_runnning = true;
+    }
 }
 
 void Codec_Stop() {
-    CodecI2s_Stop();
+    if (is_runnning) {
+        CodecI2s_Stop();
+        is_runnning = false;
+    }
+}
+
+bool Codec_IsRunning() {
+    return is_runnning;
 }
 
 uint32_t Codec_GetSampleRate() {
@@ -205,7 +216,9 @@ int16_t Codec_GetVolume(uint8_t channel) {
 }
 
 void Codec_WriteBuffer(uint8_t const* buffer, uint32_t bytes) {
-    CodecI2s_WriteUACBuffer(buffer, bytes);
+    if (is_runnning) {
+        CodecI2s_WriteUACBuffer(buffer, bytes);
+    }
 }
 
 uint32_t Codec_GetFeedbackFs() {

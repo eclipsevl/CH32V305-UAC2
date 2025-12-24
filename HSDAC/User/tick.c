@@ -17,6 +17,8 @@ void TIM2_IRQHandler(void) {
 void Tick_Init(void) {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
+    // oh shit, 我已经忘记之前超频总线把定时器那个总线搞到多少MHZ了
+    
     // const uint32_t tim2_freq = SystemCoreClock / 4; // 24MHz
     // prescale * period = 24kHz;
     // period = 1ms
@@ -25,14 +27,16 @@ void Tick_Init(void) {
     init.TIM_ClockDivision = TIM_CKD_DIV4;
     init.TIM_CounterMode = TIM_CounterMode_Up;
     init.TIM_RepetitionCounter = 0;
-    init.TIM_Period = 1000 - 1;
-    init.TIM_Prescaler = 96 - 1;
+    // init.TIM_Period = 1000 - 1;
+    // init.TIM_Prescaler = 96 - 1;
+    init.TIM_Period = 7013 - 1;
+    init.TIM_Prescaler = 28 - 1;
     TIM_TimeBaseInit(TIM2, &init);
 
     NVIC_InitTypeDef nvic;
     nvic.NVIC_IRQChannel = TIM2_IRQn;
     nvic.NVIC_IRQChannelCmd = ENABLE;
-    nvic.NVIC_IRQChannelPreemptionPriority = 3;
+    nvic.NVIC_IRQChannelPreemptionPriority = 2;
     nvic.NVIC_IRQChannelSubPriority = 0;
     NVIC_Init(&nvic);
 

@@ -8,6 +8,7 @@ void Codec_Handler();
 
 void Codec_Start();
 void Codec_Stop();
+bool Codec_IsRunning();
 
 uint32_t Codec_GetSampleRate();
 void     Codec_SetSampleRate(uint32_t sample_rate);
@@ -18,4 +19,5 @@ void    Codec_SetVolume(uint8_t channel, int16_t volume);
 int16_t Codec_GetVolume(uint8_t channel);
 
 void     Codec_WriteBuffer(uint8_t const* buffer, uint32_t bytes);
+void     Codec_SlienceReadBuffer();
 uint32_t Codec_GetFeedbackFs();
