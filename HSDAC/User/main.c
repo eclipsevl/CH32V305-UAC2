@@ -3,8 +3,8 @@
 #include "tick.h"
 #include "usbd.h"
 #include "codec.h"
-
-uint32_t GetDmaSamplesHave();
+#include "audio_block.h"
+#include "codec_i2s.h"
 
 int main(void) {
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -18,14 +18,16 @@ int main(void) {
     uint32_t tick = Tick_GetTick();
     for (;;) {
         Codec_Handler();
+        AudioBlock_Handler();
 
         uint32_t now = Tick_GetTick();
         if (now - tick > 1000) {
             if (!inited) {
                 printf("codec inited failed\n\r");
             }
-            printf("fb:%lu, have:%lu\n\r", Codec_GetFeedbackFs(), GetDmaSamplesHave());
             tick = now;
+
+            printf("codec dma have %ld\n\r", CodecI2s_GetFreeSpace());
         }
     }
 

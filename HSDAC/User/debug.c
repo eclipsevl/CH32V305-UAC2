@@ -80,6 +80,7 @@ void Delay_Ms(uint32_t n)
  */
 void USART_Printf_Init(uint32_t baudrate)
 {
+    (void)baudrate;
     // GPIO_InitTypeDef  GPIO_InitStructure;
     // USART_InitTypeDef USART_InitStructure;
 
@@ -163,6 +164,7 @@ void SDI_Printf_Enable(void)
 __attribute__((used)) int _write(int fd, char *buf, int size)
 {
     // int i = 0;
+    (void)fd;
 
 #if (SDI_PRINT == SDI_PR_OPEN)
     int writeSize = size;

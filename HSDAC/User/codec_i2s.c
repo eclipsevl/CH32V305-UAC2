@@ -1,13 +1,14 @@
 #include "codec_i2s.h"
 
 #include <string.h>
+#include <stdatomic.h>
 
 #include "ch32v30x_gpio.h"
 #include "ch32v30x_rcc.h"
 #include "ch32v30x_spi.h"
 #include "ch32v30x_dma.h"
 #include "ch32v30x_misc.h"
-#include "config.h"
+#include "audio_block.h"
 
 // --------------------------------------------------------------------------------
 // marco
@@ -18,11 +19,6 @@
 // --------------------------------------------------------------------------------
 // type
 // --------------------------------------------------------------------------------
-
-struct StereoSample {
-    int32_t left;
-    int32_t right;
-};
 
 // --------------------------------------------------------------------------------
 // variable
@@ -104,7 +100,7 @@ static uint32_t GetDmaCanWrite() {
     return can_write & I2S_DMA_BUFFER_SIZE_MASK;
 }
 
-uint32_t GetDmaSamplesHave() {
+static uint32_t GetDmaSamplesHave() {
     return I2S_DMA_BUFFER_SIZE - GetDmaCanWrite();
 }
 
@@ -134,25 +130,22 @@ void CodecI2s_DeInit(void) {
 }
 
 void CodecI2s_Start(void) {
-    memset(i2s_dma_buffer_, 0, sizeof(i2s_dma_buffer_));
-    // set it before dma rpos half buffer size
-    last_i2s_dma_wpos_ = (GetDmaReadPos() + I2S_DMA_BUFFER_SIZE / 2) & I2S_DMA_BUFFER_SIZE_MASK;
+    // memset(i2s_dma_buffer_, 0, sizeof(i2s_dma_buffer_));
+    // last_i2s_dma_wpos_ = (GetDmaReadPos() + I2S_DMA_BUFFER_SIZE / 2) & I2S_DMA_BUFFER_SIZE_MASK;
 }
 
 void CodecI2s_Stop(void) {
-    memset(i2s_dma_buffer_, 0, sizeof(i2s_dma_buffer_));
+    // memset(i2s_dma_buffer_, 0, sizeof(i2s_dma_buffer_));
 }
 
-void CodecI2s_WriteUACBuffer(const uint8_t* ptr, uint32_t len) {
+uint32_t CodecI2s_WriteUACBuffer(struct StereoSample* src, uint32_t len) {
     uint32_t can_write = GetDmaCanWrite();
-    len /= sizeof(struct StereoSample);
     can_write = len < can_write ? len : can_write;
 
     uint32_t fill1 = I2S_DMA_BUFFER_SIZE - last_i2s_dma_wpos_;
     fill1 = fill1 < can_write ? fill1 : can_write;
     uint32_t fill2 = can_write - fill1;
 
-    struct StereoSample* src = (struct StereoSample*)ptr;
     struct StereoSample* dst = &i2s_dma_buffer_[last_i2s_dma_wpos_];
     while (fill1--) {
         dst->left = Swap16(src->left);
@@ -171,6 +164,70 @@ void CodecI2s_WriteUACBuffer(const uint8_t* ptr, uint32_t len) {
 
     last_i2s_dma_wpos_ += can_write;
     last_i2s_dma_wpos_ &= I2S_DMA_BUFFER_SIZE_MASK;
+
+    return can_write;
+}
+
+void CodecI2s_WriteUACBufferNocheck(struct StereoSample* src, uint32_t len) {
+    uint32_t fill1 = I2S_DMA_BUFFER_SIZE - last_i2s_dma_wpos_;
+    fill1 = fill1 < len ? fill1 : len;
+    uint32_t fill2 = len - fill1;
+
+    struct StereoSample* dst = &i2s_dma_buffer_[last_i2s_dma_wpos_];
+    while (fill1--) {
+        dst->left = Swap16(src->left);
+        dst->right = Swap16(src->right);
+        ++src;
+        ++dst;
+    }
+
+    dst = &i2s_dma_buffer_[0];
+    while (fill2--) {
+        dst->left = Swap16(src->left);
+        dst->right = Swap16(src->right);
+        ++src;
+        ++dst;
+    }
+
+    last_i2s_dma_wpos_ += len;
+    last_i2s_dma_wpos_ &= I2S_DMA_BUFFER_SIZE_MASK;
+}
+
+void CodecI2s_FillZero(uint32_t len) {
+    if (len == 0) return;
+
+    uint32_t fill1 = I2S_DMA_BUFFER_SIZE - last_i2s_dma_wpos_;
+    fill1 = fill1 < len ? fill1 : len;
+    uint32_t fill2 = len - fill1;
+
+    struct StereoSample* dst = &i2s_dma_buffer_[last_i2s_dma_wpos_];
+    while (fill1--) {
+        dst->left = 0;
+        dst->right = 0;
+        ++dst;
+    }
+
+    dst = &i2s_dma_buffer_[0];
+    while (fill2--) {
+        dst->left = 0;
+        dst->right = 0;
+        ++dst;
+    }
+
+    last_i2s_dma_wpos_ += len;
+    last_i2s_dma_wpos_ &= I2S_DMA_BUFFER_SIZE_MASK;
+}
+
+void CodecI2s_FillZeroIfTooSmallData() {
+    uint32_t can_write = GetDmaCanWrite();
+    if (can_write > I2S_DMA_FILL_ZERO_THRESHOULD) {
+        uint32_t fill_zero = can_write - I2S_DMA_BUFFER_SIZE / 2;
+        CodecI2s_FillZero(fill_zero);
+    }
+}
+
+uint32_t CodecI2s_GetFreeSpace() {
+    return GetDmaCanWrite();
 }
 
 void CodecI2s_SetSampleRate(uint32_t sample_rate) {

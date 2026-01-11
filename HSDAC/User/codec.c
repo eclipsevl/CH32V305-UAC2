@@ -29,27 +29,10 @@ static uint32_t diff_sample_rate_;
 static uint32_t es9018_reg_changes_;
 static int16_t usb_volume_[2];
 static uint8_t usb_mute_;
-static bool is_runnning = false;
 
 // --------------------------------------------------------------------------------
 // implement
 // --------------------------------------------------------------------------------
-
-void Codec_PollWrite(uint8_t reg, uint8_t val) {
-    while (I2C_GetFlagStatus (I2C2, I2C_FLAG_BUSY) != RESET) {}
-    I2C_GenerateSTART (I2C2, ENABLE);
-    while (!I2C_CheckEvent (I2C2, I2C_EVENT_MASTER_MODE_SELECT)) {}
-    I2C_Send7bitAddress (I2C2, 0x90, I2C_Direction_Transmitter);
-    while (!I2C_CheckEvent (I2C2, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)) {}
-    while (I2C_GetFlagStatus (I2C2, I2C_FLAG_TXE) == RESET) {}
-    I2C_SendData (I2C2, reg);
-    while (I2C_GetFlagStatus (I2C2, I2C_FLAG_TXE) == RESET) {}
-    Delay_Ms(1);
-    I2C_SendData (I2C2, val);
-    while (I2C_GetFlagStatus (I2C2, I2C_EVENT_MASTER_BYTE_TRANSMITTED) == RESET) {}
-    I2C_GenerateSTOP (I2C2, ENABLE);
-    Delay_Ms(1);
-}
 
 static uint8_t GetRegVolume(uint8_t channel) {
     uint8_t vol = 0;
@@ -97,21 +80,11 @@ bool Codec_Init() {
 }
 
 void Codec_Start() {
-    if (!is_runnning) {
-        CodecI2s_Start();
-        is_runnning = true;
-    }
+    CodecI2s_Start();
 }
 
 void Codec_Stop() {
-    if (is_runnning) {
-        CodecI2s_Stop();
-        is_runnning = false;
-    }
-}
-
-bool Codec_IsRunning() {
-    return is_runnning;
+    CodecI2s_Stop();
 }
 
 uint32_t Codec_GetSampleRate() {
@@ -213,12 +186,6 @@ int16_t Codec_GetVolume(uint8_t channel) {
             break;
     }
     return 0;
-}
-
-void Codec_WriteBuffer(uint8_t const* buffer, uint32_t bytes) {
-    if (is_runnning) {
-        CodecI2s_WriteUACBuffer(buffer, bytes);
-    }
 }
 
 uint32_t Codec_GetFeedbackFs() {

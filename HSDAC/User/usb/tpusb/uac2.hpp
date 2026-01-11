@@ -614,7 +614,7 @@ struct AudioControlInterface2 : public Interface<AudioFunction<AUDIOFUNCTION...>
         InterfaceInitPackClassed pack,
         const AudioFunction<AUDIOFUNCTION...>& function,
         InterruptInitPack interrupt
-    ) : Interface<AudioFunction<AUDIOFUNCTION...>>(
+    ) : Interface<AudioFunction<AUDIOFUNCTION...>, Endpoint<>>(
         InterfaceInitPack{
             .interface_no = pack.interface_no,
             .alter = pack.alter,

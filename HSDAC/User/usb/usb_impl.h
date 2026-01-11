@@ -1,6 +1,8 @@
 #pragma once
 
 #include "usb_device.h"
+#include "config.h"
+#include "audio_block.h"
 
 void UsbImpl_InitAndOpenEndpoints();
 
@@ -27,10 +29,11 @@ enum Uac2EntityId {
 };
 
 #define UAC2_CONTROL_INTERFACE 0
+#define UAC2_CONTROL_DATA_IN_ADDRESS 0x84
 
 #define UAC2_STREAM_INTERFACE 1
 #define UAC2_STREAM_DATA_OUT_EP_ADDRESS 0x01
-#define UAC2_STREAM_DATA_OUT_EP_MPSIZE 1024
+#define UAC2_STREAM_DATA_OUT_EP_MPSIZE (UAC_MAX_PACKAGE_SIZE * sizeof(struct StereoSample))
 #define UAC2_STREAM_FEEDBACK_IN_EP_ADDRESS 0x81
 #define UAC2_STREAM_FEEDBACK_IN_EP_MPSIZE 4
 

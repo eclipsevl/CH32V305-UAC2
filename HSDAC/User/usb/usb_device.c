@@ -23,7 +23,7 @@ void UsbDevice_Init() {
     USBHSD->CONTROL &= ~USBHS_UC_RESET_SIE;
     USBHSD->HOST_CTRL = USBHS_UH_PHY_SUSPENDM;
     USBHSD->CONTROL = USBHS_UC_DMA_EN | USBHS_UC_INT_BUSY | USBHS_UC_SPEED_HIGH;
-    USBHSD->INT_EN = USBHS_UIE_SETUP_ACT | USBHS_UIE_TRANSFER | USBHS_UIE_DETECT | USBHS_UIE_SUSPEND | USBHS_UIE_SOF_ACT;
+    USBHSD->INT_EN = USBHS_UIE_SETUP_ACT | USBHS_UIE_TRANSFER | USBHS_UIE_DETECT | USBHS_UIE_SUSPEND;
 
     UsbDevice_Reset(&usb_device);
 }
@@ -396,6 +396,7 @@ static void UsbDevice_StallEndpoint(struct UsbDevice* device, uint8_t address, b
 }
 
 static bool UsbDevice_IsEndpointStall(struct UsbDevice* device, uint8_t address, bool* allow) {
+    (void)device;
     *allow = true;
 
     uint8_t ep_num = address & 0xf;
