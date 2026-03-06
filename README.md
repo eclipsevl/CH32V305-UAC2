@@ -7,6 +7,9 @@ This dac only support 48k,96k,192k 32bits, dsd and other formats are not conside
 This DAC only supports high-speed connections.  
 You might hear some popping sounds during sudden high-load tasks. I have added mute detection code to eliminate some of these occurrences. I hope it helps you. You can adjust your parameters in config.h.  
 
+> [!NOTE]
+> ch32v305fbp6 doesn't have OTG-HS(but it has OTG-FS), so you can't connect this project to a smartphone.  
+
 ## setup
 Just flash HSDAC.elf to hardware. Don't use HID-Bootloader and dfu, they will be redoing in future.  
 
@@ -15,5 +18,6 @@ Can someone redesign the power amplifier circuit?
 
 # IMAGE
 ![DAC Image](resource/dac.jpg)
+
 
 
